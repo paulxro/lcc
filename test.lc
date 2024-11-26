@@ -1,0 +1,8 @@
+fn main() {
+    int a = 0;
+    int b = 5;
+
+    while (a < b) {
+        a = a + 1;
+    }
+}
