@@ -9,6 +9,8 @@
 *.out
 build/*
 
+*.dSYM
+
 
 # Compiled Object files
 *.slo
