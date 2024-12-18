@@ -26,9 +26,17 @@ int main(int argc, char **argv) {
 
     if (!in_file.is_open())
         print_exit(ERR, std::string("Cannot open file ") + argv[1]);
+    
+    std::string source(
+        (std::istreambuf_iterator<char>(in_file)),
+        std::istreambuf_iterator<char>()
+    );
 
-    Tokenizer tokenizer("exit 20;");
+    Tokenizer tokenizer(source);
 
-    tokenizer.tokenize();
+    std::vector<Token> tokens = tokenizer.tokenize();
+
+    for (auto& token : tokens)
+        std::cout << token.value << " " << token.type << "\n";
 }
 

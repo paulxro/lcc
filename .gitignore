@@ -4,6 +4,11 @@
 # VSCode
 .vscode
 
+*.asm
+*.o
+*.out
+build/*
+
 
 # Compiled Object files
 *.slo
