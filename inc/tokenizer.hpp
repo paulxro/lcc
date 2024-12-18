@@ -14,11 +14,19 @@
 enum TokenType {
     k_exit,
     k_func,
+    k_let,
     d_int,
     l_int,
     l_float,
+    m_ident,
     m_keybreak,
     m_unknown,
+
+
+    b_lparen,
+    b_rparen,
+    b_colon,
+    b_semi,
 };
 
 struct Token {
@@ -47,7 +55,7 @@ public:
 
 private:
     static std::unordered_map<std::string, TokenType> m_keywords;
-    static std::unordered_set<char>        m_keybreak;
+    static std::unordered_map<std::string, TokenType> m_keybreak;
     std::vector<Token> m_tokens;
 
     uint32_t m_pos = 0;
@@ -63,14 +71,19 @@ private:
            std::optional<std::string> read_token();
     
 
-    inline bool is_keybreak(char);
+    inline bool is_keybreak (char);
+    inline bool is_keybreak (std::string&);
            void append_token(std::string&);
     
-    inline bool _is_keyword(Token&);
-    inline bool _is_integer(Token&);
-    inline bool _is_float  (Token&);
+    inline bool _is_keybreak  (Token&);
+    inline bool _is_keyword   (Token&);
+    inline bool _is_integer   (Token&);
+    inline bool _is_float     (Token&);
+    inline bool _is_identifier(Token&);
 
 
-    inline bool __is_numeric(const std::string&);
+    inline bool __is_number    (const char);
+    inline bool __is_numeric   (const std::string&);
+    inline bool __is_whitespace(const std::string&);
 };
 
