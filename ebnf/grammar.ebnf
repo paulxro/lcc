@@ -1,0 +1,50 @@
+(* Program structure *)
+Program     ::= { FunctionDecl | Statement } ;
+
+(* Function declarations *)
+FunctionDecl ::= DataType Ident "(" [ ParamDecl ] ")" Block ;
+
+ParamDecl   ::= DataType Ident ;
+
+Block       ::= "{" { Statement } "}" ;
+
+(* Statements *)
+Statement   ::= VarDecl
+              | Assignment
+              | ExprStmt
+              | "exit" "(" Expr ")" ";" ;
+
+(* Variable declarations (with initialization) *)
+VarDecl     ::= "let" Ident ":" DataType "=" Expr ";" ;
+
+(* Variable assignment (after declaration) *)
+Assignment  ::= Ident "=" Expr ";" ;
+
+(* Expression as a statement (e.g., function calls) *)
+ExprStmt    ::= Expr ";" ;
+
+(* Expressions *)
+Expr        ::= Equality ;
+
+Equality    ::= AddSub [ "==" AddSub ] ;
+
+AddSub      ::= Term { ("+" | "-") Term } ;
+
+Term        ::= Factor ;   (* no multiplication/division yet *)
+
+Factor      ::= Literal
+              | Ident
+              | "(" Expr ")" ;
+
+(* Terminals *)
+DataType    ::= "int" ;
+
+Literal     ::= IntLiteral ;
+
+IntLiteral  ::= Digit { Digit } ;
+
+Ident       ::= Letter { Letter | Digit | "_" } ;
+
+Digit       ::= "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" ;
+
+Letter      ::= "a" | "b" | ... | "z" | "A" | "B" | ... | "Z" ;
