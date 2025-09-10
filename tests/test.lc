@@ -1,6 +1,1 @@
 let x: int = 5;
-let y: int = x - 3;
-
-fn int test(int x) {
-
-}

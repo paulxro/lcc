@@ -1,0 +1,9 @@
+""" VarDecl """
+let [identifier] : [type] = [expression]
+
+""" FuncDecl """
+fn [type] [identifier] ([param1] : [type]) { [block] }
+
+""" Condition """
+if ( [condition] ) { [block] }
+

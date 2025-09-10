@@ -16,6 +16,7 @@ std::unordered_map<std::string, TokenType> Tokenizer::m_keybreak = {
     {";", b_semi},
     {"{", b_left_curl},
     {"}", b_right_curl},
+    {",", b_comma},
 
     // Operators
     {"+", o_plus},
@@ -24,139 +25,144 @@ std::unordered_map<std::string, TokenType> Tokenizer::m_keybreak = {
     {"==", o_equal_equal},
 };
 
-/* Batch tokenizer: consume all tokens until EOF. */
 std::vector<Token> Tokenizer::tokenize() {
-    std::vector<Token> tokens;
-    reset(); // make sure we start fresh
+    std::vector<Token> result {};
 
-    while (true) {
-        auto tok = next_token();
-        if (!tok) break;
-        tokens.push_back(*tok);
-    }
-    return tokens;
+    for (auto curr = this->next_token(); curr; curr = this->next_token())
+        result.push_back(*curr);
+    
+    return result;
 }
 
-/* Stream tokenizer: get next token and advance. */
 std::optional<Token> Tokenizer::next_token() {
-    if (m_peeked) {
-        auto tok = m_peeked;
-        m_peeked.reset();
-        return tok;
+    if (this->m_peeked) {
+        auto token = this->m_peeked;
+        this->m_peeked.reset();
+        return token;
     }
 
-    auto text = read_token();
-    if (!text) return std::nullopt;
+    auto next_str = this->read_token();
+    if (!next_str)
+        return std::nullopt;
 
-    // Check keywords
-    auto kw_it = m_keywords.find(*text);
-    if (kw_it != m_keywords.end()) {
-        return Token{*text, kw_it->second};
-    }
-
-    // Check symbols and operators
-    auto sym_it = m_keybreak.find(*text);
-    if (sym_it != m_keybreak.end()) {
-        return Token{*text, sym_it->second};
-    }
-
-    // Check literals (integer for now)
-    if (__is_numeric(*text)) {
-        return Token{*text, l_int};
-    }
-
-    // Otherwise identifier
-    if (std::isalpha((*text)[0]) || (*text)[0] == '_') {
-        return Token{*text, m_ident};
-    }
-
-    // Fallback unknown
-    return Token{*text, m_unknown};
+    auto token_type = this->classify_token(*next_str);
+    if (!token_type)
+        return std::nullopt;
+    
+    return Token {.value = *next_str, .type = *token_type};
 }
 
-/* Stream tokenizer: peek at next token without advancing. */
 std::optional<Token> Tokenizer::peek_token() {
-    if (!m_peeked) {
-        m_peeked = next_token();
-    }
-    return m_peeked;
+    if (!this->m_peeked)
+        this->m_peeked = next_token();
+
+    return this->m_peeked;
 }
 
-/* Reset tokenizer to start of input. */
-void Tokenizer::reset() {
-    m_pos = 0;
-    m_peeked.reset();
-}
-
-/* Character helpers */
 std::optional<char> Tokenizer::peek(uint32_t offset) {
-    if (m_pos + offset < m_src.size()) {
-        return m_src[m_pos + offset];
-    }
-    return std::nullopt;
+    if (this->m_pos + offset >= this->m_src.length())
+        return std::nullopt;
+    return this->m_src[this->m_pos + offset];
 }
 
 std::optional<char> Tokenizer::consume() {
-    if (m_pos < m_src.size()) {
-        return m_src[m_pos++];
-    }
-    return std::nullopt;
+    if (this->m_pos >= this->m_src.length())
+        return std::nullopt;
+    return this->m_src[this->m_pos++];
 }
 
-/* Core: read the next raw token string. */
 std::optional<std::string> Tokenizer::read_token() {
-    // Skip whitespace
+    this->_consume_whitespace();
+
+    auto curr = this->peek();
+    if (!curr) return std::nullopt;
+
+    if (this->__is_number(*curr))
+        return this->_parse_number();
+    
+    if (this->__is_alpha(*curr))
+        return this->_parse_alpha();
+
+    // Parse symbols/operators
+    return this->_parse_symbol();
+}
+
+
+std::optional<TokenType> Tokenizer::classify_token(const std::string& str) {
+    if (str.empty()) return std::nullopt;
+
+    if (this->__is_numeric(str))
+        return TokenType::l_int;
+
+    auto keyword_find = Tokenizer::m_keywords.find(str);
+    if (keyword_find != Tokenizer::m_keywords.end())
+        return keyword_find->second;
+
+    auto keybreak_find = Tokenizer::m_keybreak.find(str);
+    if (keybreak_find != Tokenizer::m_keybreak.end())
+        return keybreak_find->second;
+
+    return TokenType::m_ident;
+}
+
+void Tokenizer::_consume_whitespace() {
+    while(true) {
+        auto ch = peek();
+        if (!ch || !std::isspace((int)(*ch)))
+            return;
+        this->consume();
+    }
+}
+
+std::string Tokenizer::_parse_number() {
+    assert(this->peek() && this->__is_number(*this->peek()));
+
+    std::string num(1, *this->consume());
+
     while (true) {
-        auto c = peek();
-        if (!c || !std::isspace(static_cast<unsigned char>(*c))) break;
-        consume();
+        auto ch = this->peek();
+        if (!ch || !this->__is_number(*ch))
+            break;
+        num.push_back(*this->consume());
     }
 
-    if (m_pos >= m_src.size()) return std::nullopt;
+    return num;
+}
 
-    char c = *consume();
+std::string Tokenizer::_parse_alpha() {
+    assert(this->peek() && this->__is_alpha(*this->peek()));
 
-    // Multi-char operator check (==)
-    if (c == '=') {
-        if (auto nc = peek(); nc && *nc == '=') {
-            consume(); // eat second '='
-            return "==";
+    std::string value(1, *this->consume());
+
+    while (true) {
+        auto ch = this->peek();
+        if (!ch || !(this->__is_alpha(*ch) || this->__is_number(*ch)))
+            break;
+        value.push_back(*this->consume()); 
+    }
+
+    return value;
+}
+
+std::string Tokenizer::_parse_symbol() {
+    // Try to match longest possible operator/symbol in m_keybreak
+    std::string symbol;
+
+    for (int len = 2; len >= 1; --len) {
+        symbol.clear();
+        for (int i = 0; i < len; ++i) {
+            auto ch = this->peek(i);
+            if (!ch) break;
+            symbol.push_back(*ch);
         }
-        return "=";
-    }
-
-    // Single-char operators and symbols
-    std::string s(1, c);
-    if (m_keybreak.count(s)) {
-        return s;
-    }
-
-    // Identifiers/keywords
-    if (std::isalpha(c) || c == '_') {
-        std::string ident(1, c);
-        while (true) {
-            auto nc = peek();
-            if (nc && (std::isalnum(*nc) || *nc == '_')) {
-                ident.push_back(*consume());
-            } else break;
+        if (Tokenizer::m_keybreak.find(symbol) != Tokenizer::m_keybreak.end()) {
+            for (int i = 0; i < (int)symbol.size(); ++i) consume();
+            return symbol;
         }
-        return ident;
     }
 
-    // Numbers
-    if (std::isdigit(c)) {
-        std::string number(1, c);
-        while (true) {
-            auto nc = peek();
-            if (nc && std::isdigit(*nc)) {
-                number.push_back(*consume());
-            } else break;
-        }
-        return number;
-    }
-
-    // Unknown token
-    return std::string(1, c);
+    // If nothing matched, consume one char as unknown
+    return std::string(1, *this->consume());
 }
 
 TokenType Tokenizer::_get_keyword(const std::string str) {
@@ -165,6 +171,12 @@ TokenType Tokenizer::_get_keyword(const std::string str) {
     if (res == Tokenizer::m_keywords.end())
         return TokenType::m_unknown;
     return res->second;
+}
+
+bool Tokenizer::__is_alpha(char c) {
+    return ('A' <= c && c <= 'Z') ||
+           ('a' <= c && c <= 'z') ||
+           (c == '_');
 }
 
 bool Tokenizer::__is_number(char c) {

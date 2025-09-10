@@ -43,18 +43,25 @@ private:
     static std::unordered_map<std::string, TokenType> m_keybreak;
 
     std::string m_src;
-    uint32_t m_pos = 0;               // char position in source
+    size_t m_pos = 0;               // char position in source
     std::optional<Token> m_peeked;    // cache for peeked token
 
     /* Character-level utilities */
     inline std::optional<char> peek(uint32_t offset = 0);
     inline std::optional<char> consume();
+
     std::optional<std::string> read_token();
+    std::optional<TokenType>   classify_token(const std::string&);
 
     /* Tokenizer internals. */
-    TokenType _get_keyword(const std::string);
+    inline TokenType   _get_keyword       (const std::string);
+    inline void        _consume_whitespace();
+    inline std::string _parse_number      ();
+    inline std::string _parse_alpha       ();
+    inline std::string _parse_symbol      ();
 
     /* Helpers */
+    inline bool __is_alpha     (char c);
     inline bool __is_number    (char c);
     inline bool __is_numeric   (const std::string&);
     inline bool __is_whitespace(const std::string&);

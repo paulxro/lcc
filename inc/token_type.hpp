@@ -43,5 +43,39 @@ enum TokenType {
     b_semi,
     b_left_curl,
     b_right_curl,
+    b_comma,
     _B_TYPE_END
 };
+
+inline const char* to_string(TokenType type) {
+    switch (type) {
+        case k_exit:        return "k_exit";
+        case k_func:        return "k_func";
+        case k_let:         return "k_let";
+        case k_if:          return "k_if";
+
+        case o_plus:        return "o_plus";
+        case o_sub:         return "o_sub";
+        case o_equal:       return "o_equal";
+        case o_equal_equal: return "o_equal_equal";
+
+        case d_int:         return "d_int";
+
+        case l_int:         return "l_int";
+        case l_float:       return "l_float";
+
+        case m_ident:       return "m_ident";
+        case m_keybreak:    return "m_keybreak";
+        case m_unknown:     return "m_unknown";
+
+        case b_lparen:      return "b_lparen";
+        case b_rparen:      return "b_rparen";
+        case b_colon:       return "b_colon";
+        case b_semi:        return "b_semi";
+        case b_left_curl:   return "b_left_curl";
+        case b_right_curl:  return "b_right_curl";
+        case b_comma:       return "b_comma";
+
+        default:            return "unknown_token_type";
+    }
+}
