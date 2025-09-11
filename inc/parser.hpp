@@ -1,4 +1,5 @@
 #include "parser_nodes.hpp"
+#include "parser_errs.hpp"
 #include "tokenizer.hpp"
 
 class Parser {
@@ -13,9 +14,11 @@ private:
     size_t m_pos = 0;
 
     const Token& peek   (size_t offset = 0) const;
-    const Token& consume(size_t offset = 0);
+    const Token& consume();
 
     /* Parsing for ASTNodes. */
+    std::unique_ptr<ASTNode>          parse_statement    ();
+
     std::unique_ptr<FunctionDeclNode> parse_function_decl();
     std::unique_ptr<FunctionCallNode> parse_function_call();
     std::unique_ptr<VarDeclNode>      parse_var_decl     ();
@@ -25,5 +28,37 @@ private:
     std::unique_ptr<BinaryExprNode>   parse_binary_expr  ();
     std::unique_ptr<IdentNode>        parse_ident_node   ();
     std::unique_ptr<IntLiteralNode>   parse_int_literal  ();
-    std::unique_ptr<ASTNode>          parse_statement    ();
+    
+
+    bool _is_operator_token(Token&) const;
+    bool _is_literal_token(Token&) const;
+    bool _is_identifier_token(Token&) const;
+
+    /*
+     * Determines if a function call starts
+     * with current token.
+     * 
+     * Current Logic:
+     * 
+     *  - Current token is an identifier
+     *  - Next token is a l_paren token.
+     */
+    inline bool _is_func_call() const;
+
+    /* 
+     * Matches current token's type to parameter.
+     *  - If matches:        returns true.
+     *  - If does not match: returns false.
+     */
+    inline bool _match        (TokenType);
+    inline bool _match_consume(TokenType);
+
+    /* 
+     * [[ STRONGER VERSION OF Parser::_match ]]
+     * Matches current token's type to parameter.
+     *  - If matches:        returns true.
+     *  - If does not match: throws error.
+     */
+    inline bool _expect        (TokenType, ParseErrorType);
+    inline bool _expect_consume(TokenType, ParseErrorType);
 };

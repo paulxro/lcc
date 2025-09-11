@@ -3,6 +3,7 @@
 #include <string>
 
 #include "tokenizer.hpp"
+#include "parser.hpp"
 
 static inline std::string CRIT = "Critical";
 static inline std::string ERR  = "Error";
@@ -35,7 +36,12 @@ int main(int argc, char **argv) {
     Tokenizer tokenizer(source);
     std::vector<Token> tokens = tokenizer.tokenize();
 
-    for (const Token& t : tokens) {
-        std::cout << t.value << " " << to_string(t.type) << std::endl;
-    }
+    Parser parser(tokens);
+    auto prog = parser.parse_program();
+
+    std::cout << prog->to_string() << std::endl;
+
+    // for (const Token& t : tokens) {
+    //     std::cout << t.value << " " << to_string(t.type) << std::endl;
+    // }
 }

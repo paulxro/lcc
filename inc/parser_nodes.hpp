@@ -112,7 +112,7 @@ struct ExprStmtNode : ASTNode {
 
     std::string to_string(int indent = 0) const override {
         return indent_str(indent) +
-               (expr ? expr->to_string() : "<null>") + ";";
+               (expr ? expr->to_string() : "<null>");
     }
 };
 
